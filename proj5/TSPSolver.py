@@ -92,18 +92,23 @@ class TSPSolver:
 		bssf = None
 		current_city_idx = 0
 		start_time = time.time()
-		while not foundTour and time.time()-start_time < time_allowance: # O(ncities)
+		while current_city_idx < ncities and not foundTour and time.time()-start_time < time_allowance: # O(ncities), worst case scenario, final route should start with the last city
 			count += 1
 			route = [cities[current_city_idx]]
 			not_visited = set(range(ncities))
 			not_visited.remove(current_city_idx)
 
-			while len(route) != ncities and time.time()-start_time < time_allowance:# O(ncities)
+			# O(ncities)
+			# - when a solution is possible, the route should contain ncities
+			# - when break is called, in worst case scenario, we can construct a route of ncities - 1, and then find out it's not possible to go to the remaining city
+			while len(route) != ncities and time.time()-start_time < time_allowance:
 				# from last city in route
 				# find the city with minimum cost to
 				min_cost = float('inf')
 				next_city_idx = -1
-				for city_idx in not_visited: # O(ncities)
+				# O(ncities)
+				# not_visited has n-1 cities at 1st iteration of the while loop, then n-2 at 2nd, n-3 ... 1 at last
+				for city_idx in not_visited:
 					cost = route[-1].costTo(cities[city_idx])
 					if cost < min_cost:
 						min_cost = cost
@@ -116,11 +121,13 @@ class TSPSolver:
 					route.append(cities[next_city_idx])
 
 			if len(route) == ncities:
-				bssf = TSPSolution(route)
-				foundTour = True
-			else:
+				if route[-1].costTo(route[0]) < float('inf'):
+					bssf = TSPSolution(route)
+					foundTour = True
+	
+			if not foundTour:
 				current_city_idx += 1
-
+		# final time complexity O(ncities ^ 3)
 		end_time = time.time()
 		results['cost'] = bssf.cost if foundTour else math.inf
 		results['time'] = end_time - start_time
