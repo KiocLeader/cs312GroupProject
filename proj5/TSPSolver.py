@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import copy
+from re import L
 from which_pyqt import PYQT_VER
 if PYQT_VER == 'PYQT5':
 	from PyQt5.QtCore import QLineF, QPointF
@@ -165,4 +167,89 @@ class TSPSolver:
 	'''
 
 	def fancy( self,time_allowance=60.0 ):
-		pass
+		results = {}
+		cities = self._scenario.getCities()
+		ncities = len(cities)
+		bssf = None
+		start_time = time.time()
+
+		subsets = self.genPowerset(ncities)
+		routeLenMap = [[math.inf for i in range(ncities)] for j in range (pow(2,ncities-1))]
+		routeLenMap[0][0] = 0
+		routeMap = [[[0] for i in range(ncities)] for j in range (pow(2,ncities-1))]
+		for i in range(pow(2,ncities-1)):
+			if (i == 0):
+				routeLenMap[0][i] = 0
+			else:
+				routeLenMap[i][0] = math.inf
+		for i in range(len(subsets)): #for all subsets
+			self.getMin(routeMap, routeLenMap, subsets, subsets[i], i, cities)
+		shortestPath = self.findSmallest(routeLenMap,pow(2,ncities-1)-1, cities, 0)
+		#return values for results
+		end_time = time.time()
+		route = self.generateRoute(routeMap[pow(2,ncities-1)-1][shortestPath], cities)
+		bssf = TSPSolution(route)
+		results['cost'] = bssf.cost
+		results['time']  = end_time - start_time
+		results['count'] = 1
+		results['soln'] = bssf
+		results['max'] = None
+		results['total'] = None
+		results['pruned'] = None
+		return results
+		#TODO: time
+
+	def generateRoute(self, currRoute, cities):
+		route = []
+		#for i in range(len(currRoute)-1, -1, -1):
+		for i in range(len(currRoute)):
+			route.append(cities[currRoute[i]])
+		return route
+
+	def genPowerset(self,ncities):
+		cities = [i for i in range(ncities)]
+		subsets = [0 for i in range(pow(2,ncities-1))]
+		index = 1
+		firstTuple = (0,0)
+		subsets[0] = firstTuple
+		for i in range(2, len(cities)):
+			for element in itertools.combinations(cities,i):
+				if (element.count(0) == 1):
+					subsets[index] = element
+					index += 1
+		lastTuple = tuple(cities)
+		subsets[len(subsets)-1] = lastTuple
+		return subsets
+	
+	def getMin(self, routeMap, routeLenMap, subsets, subset, index, cities): #need to change what i we are getting, 
+		#currently it is which subset we are on and we want it to be where we are trying to endup at
+		dist = math.inf
+		for j in range(len(subset)): #for all j in subset where j !=0
+			if (subset[j] != 0):
+				if (len(subset) > 2):
+					oldDistSubset = subset[:j] + subset[j+1:] #gets the subset - j
+					subsetIndex = subsets.index(oldDistSubset) #gets what index that would be on our table
+					lastCity = self.findSmallest(routeLenMap,subsetIndex, cities, subset[j]) #finds which last city had the shortest path
+					oldDist = routeLenMap[subsetIndex][lastCity] #gets the dist of the last route we took
+					newRoute = copy.deepcopy(routeMap[subsetIndex][lastCity]) #gets the array of cities on our route
+				else:
+					oldDist = 0
+					lastCity = 0
+					newRoute = copy.deepcopy(routeMap[index][0])
+				dist = oldDist + cities[lastCity].costTo(cities[subset[j]]) #distance from last city on route to next city
+				newRoute.append(subset[j])
+				routeMap[index][subset[j]] = newRoute
+				routeLenMap[index][subset[j]] = dist			
+
+	def findSmallest(self, routeLenMap, subsetIndex, cities,goalCity):
+		value = math.inf
+		index = 0
+		for i in range(len(cities)):
+			oldDist = routeLenMap[subsetIndex][i]
+			nextDist = cities[i].costTo(cities[goalCity])
+			if (oldDist+nextDist < value):
+				value = oldDist + nextDist
+				index = i
+		return index
+
+	
