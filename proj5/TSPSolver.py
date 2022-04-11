@@ -175,22 +175,22 @@ class TSPSolver:
 		bssf = None
 		subsets = self.genPowerset(ncities)
 		start_time = time.time()
-		routeLenMap = [[[[0], math.inf] for i in range(ncities)] for j in range (pow(2,ncities-1))]
-		routeLenMap[0][0][1] = 0
+		routeLenMap = [[ math.inf for i in range(ncities)] for j in range (pow(2,ncities-1))]
+		routeLenMap[0][0] = 0
 		#routeMap = [[[0] for i in range(ncities)] for j in range (pow(2,ncities-1))]
 		for i in range(pow(2,ncities-1)):
 			if (i == 0):
-				routeLenMap[0][i][1] = 0
+				routeLenMap[0][i] = 0
 			else:
-				routeLenMap[i][0][1] = math.inf
+				routeLenMap[i][0] = math.inf
 		for i in range(len(subsets)): #for all subsets
 			self.getMin(routeLenMap, subsets, subsets[i], i, cities)
 		shortestPath = self.findSmallest(routeLenMap,pow(2,ncities-1)-1, cities, 0)
 		#return values for results
 		end_time = time.time()
-		route = self.generateRoute(routeLenMap[pow(2,ncities-1)-1][shortestPath][0], cities)
-		bssf = TSPSolution(route)
-		results['cost'] = bssf.cost
+		#route = self.generateRoute(routeLenMap[pow(2,ncities-1)-1][shortestPath], cities)
+		#bssf = TSPSolution(route)
+		results['cost'] = routeLenMap[pow(2,ncities-1)-1][shortestPath] + cities[shortestPath].costTo(cities[0])
 		results['time']  = end_time - start_time
 		results['count'] = 1
 		results['soln'] = bssf
@@ -228,16 +228,16 @@ class TSPSolver:
 					oldDistSubset = subset[:j] + subset[j+1:] #gets the subset - j
 					subsetIndex = subsets.index(oldDistSubset) #gets what index that would be on our table
 					lastCity = self.findSmallest(routeLenMap,subsetIndex, cities, subset[j]) #finds which last city had the shortest path
-					oldDist = routeLenMap[subsetIndex][lastCity][1] #gets the dist of the last route we took
-					newRoute = copy.deepcopy(routeLenMap[subsetIndex][lastCity][0]) #gets the array of cities on our route
+					oldDist = routeLenMap[subsetIndex][lastCity] #gets the dist of the last route we took
+					#newRoute = copy.copy(routeLenMap[subsetIndex][lastCity][0]) #gets the array of cities on our route
 				else:
 					oldDist = 0
 					lastCity = 0
-					newRoute = copy.deepcopy(routeLenMap[index][0][0])
+					#newRoute = copy.copy(routeLenMap[index][0][0])
 				dist = oldDist + cities[lastCity].costTo(cities[subset[j]]) #distance from last city on route to next city
-				newRoute.append(subset[j])
-				routeLenMap[index][subset[j]][0] = newRoute
-				routeLenMap[index][subset[j]][1] = dist			
+				#newRoute.append(subset[j])
+				#routeLenMap[index][subset[j]][0] = newRoute
+				routeLenMap[index][subset[j]] = dist			
 
 	#routeLenMap - map of current distances
 	#subsetIndex - the subset you are dealing with
@@ -247,7 +247,7 @@ class TSPSolver:
 		value = math.inf
 		index = 0
 		for i in range(len(cities)):
-			oldDist = routeLenMap[subsetIndex][i][1]
+			oldDist = routeLenMap[subsetIndex][i]
 			nextDist = cities[i].costTo(cities[goalCity])
 			if (oldDist+nextDist < value):
 				value = oldDist + nextDist
