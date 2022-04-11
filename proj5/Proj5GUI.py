@@ -374,7 +374,8 @@ class Proj5GUI( QMainWindow ):
 		('Default                            ','defaultRandomTour'), \
 		('Greedy','greedy'), \
 		('Branch and Bound','branchAndBound'), \
-		('Fancy','fancy') \
+		('Fancy','fancy'), \
+		('tiredRunner','tiredRunner') \
 	]															# whitespace hack to get longest to display correctly
 
 	def initUI( self ):
